@@ -1,0 +1,284 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "connections_filesystem_name": {
+            "defaultValue": "filesystem",
+            "type": "String"
+        },
+        "connections_filesystem_1_name": {
+            "defaultValue": "filesystem-1",
+            "type": "String"
+        },
+        "workflows_XMLProcessingViaHTTP_name": {
+            "defaultValue": "XMLProcessingViaHTTP",
+            "type": "String"
+        },
+        "workflows_XMLProcessingViaHTTP_id": {
+            "defaultValue": "/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/resourceGroups/IntegrationGroup/providers/Microsoft.Logic/integrationAccounts/IntegrationAccount",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "comments": "Generalized from resource: '/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/resourceGroups/SIT/providers/Microsoft.Logic/workflows/XMLProcessingViaHTTP'.",
+            "type": "Microsoft.Logic/workflows",
+            "name": "[parameters('workflows_XMLProcessingViaHTTP_name')]",
+            "apiVersion": "2017-07-01",
+            "location": "northcentralus",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "state": "Enabled",
+                "integrationAccount": {
+                    "id": "[parameters('workflows_XMLProcessingViaHTTP_id')]"
+                },
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        }
+                    },
+                    "triggers": {
+                        "manual": {
+                            "type": "Request",
+                            "kind": "Http",
+                            "inputs": {
+                                "method": "POST",
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Condition": {
+                            "actions": {
+                                "Response": {
+                                    "runAfter": {},
+                                    "type": "Response",
+                                    "kind": "Http",
+                                    "inputs": {
+                                        "body": "@actions('XML_Validation').outputs.Errors",
+                                        "statusCode": 400
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "XML_Validation": [
+                                    "Succeeded",
+                                    "Failed"
+                                ]
+                            },
+                            "else": {
+                                "actions": {
+                                    "Create_file": {
+                                        "runAfter": {
+                                            "Flat_File_Encoding": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "body": "@actionOutputs('Flat_File_Encoding').body",
+                                            "host": {
+                                                "connection": {
+                                                    "name": "@parameters('$connections')['filesystem_1']['connectionId']"
+                                                }
+                                            },
+                                            "method": "post",
+                                            "path": "/datasets/default/files",
+                                            "queries": {
+                                                "folderPath": "D:\\LogicAppPOC\\MessagingSolution\\test\\Output",
+                                                "name": "TransformedOutput_@{guid()}.txt",
+                                                "queryParametersSingleEncoded": true
+                                            }
+                                        }
+                                    },
+                                    "Flat_File_Encoding": {
+                                        "runAfter": {
+                                            "Transform_XML": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "FlatFileEncoding",
+                                        "inputs": {
+                                            "content": "@{body('Transform_XML')}",
+                                            "integrationAccount": {
+                                                "schema": {
+                                                    "name": "Destination"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "OK_-_Response_-_Succcess": {
+                                        "runAfter": {
+                                            "Create_file": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "body": "@{actions('XML_Validation').status} - XML Validated and Transformed Successfully",
+                                            "statusCode": 200
+                                        }
+                                    },
+                                    "Transform_XML": {
+                                        "runAfter": {},
+                                        "type": "Xslt",
+                                        "inputs": {
+                                            "content": "@{triggerBody()}",
+                                            "integrationAccount": {
+                                                "map": {
+                                                    "name": "map_LocationCollection_XML_To_ESSBASE"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "@equals(actions('XML_Validation').status, 'Succeeded')",
+                                            false
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "Condition_check:_is_the_request_body_empty": {
+                            "actions": {
+                                "Bad_Request_response:_Empty_Body": {
+                                    "runAfter": {},
+                                    "type": "Response",
+                                    "kind": "Http",
+                                    "inputs": {
+                                        "body": {
+                                            "error": {
+                                                "code": "BadRequest",
+                                                "message": "Empty request body - nothing to validate",
+                                                "target": "HTTP_Request"
+                                            }
+                                        },
+                                        "schema": {
+                                            "properties": {
+                                                "error": {
+                                                    "properties": {
+                                                        "code": {
+                                                            "type": "string"
+                                                        },
+                                                        "message": {
+                                                            "type": "string"
+                                                        },
+                                                        "target": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "statusCode": 400
+                                    }
+                                },
+                                "Terminate": {
+                                    "runAfter": {
+                                        "Bad_Request_response:_Empty_Body": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Terminate",
+                                    "inputs": {
+                                        "runStatus": "Succeeded"
+                                    }
+                                }
+                            },
+                            "runAfter": {},
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "@equals(triggerBody(),null)",
+                                            true
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "XML_Validation": {
+                            "runAfter": {
+                                "Condition_check:_is_the_request_body_empty": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "XmlValidation",
+                            "inputs": {
+                                "content": "@{triggerBody()}",
+                                "integrationAccount": {
+                                    "schema": {
+                                        "name": "Source.xsd"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "filesystem_1": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('connections_filesystem_1_name'))]",
+                                "connectionName": "filesystem-1",
+                                "id": "/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/providers/Microsoft.Web/locations/northcentralus/managedApis/filesystem"
+                            }
+                        }
+                    }
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/connections', parameters('connections_filesystem_1_name'))]"
+            ]
+        },
+        {
+            "comments": "Generalized from resource: '/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/resourceGroups/SIT/providers/Microsoft.Web/connections/filesystem'.",
+            "type": "Microsoft.Web/connections",
+            "name": "[parameters('connections_filesystem_name')]",
+            "apiVersion": "2016-06-01",
+            "location": "northcentralus",
+            "scale": null,
+            "properties": {
+                "displayName": "FileConnectino",
+                "customParameterValues": {},
+                "api": {
+                    "id": "[concat('/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/providers/Microsoft.Web/locations/northcentralus/managedApis/', parameters('connections_filesystem_name'))]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "comments": "Generalized from resource: '/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/resourceGroups/SIT/providers/Microsoft.Web/connections/filesystem-1'.",
+            "type": "Microsoft.Web/connections",
+            "name": "[parameters('connections_filesystem_1_name')]",
+            "apiVersion": "2016-06-01",
+            "location": "northcentralus",
+            "scale": null,
+            "properties": {
+                "displayName": "NewConnection",
+                "customParameterValues": {},
+                "api": {
+                    "id": "/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/providers/Microsoft.Web/locations/northcentralus/managedApis/filesystem"
+                }
+            },
+            "dependsOn": []
+        }
+    ]
+}
