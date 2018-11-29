@@ -2,16 +2,16 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "connections_filesystem_name": {
-            "defaultValue": "filesystem",
-            "type": "String"
-        },
         "connections_filesystem_1_name": {
             "defaultValue": "filesystem-1",
             "type": "String"
         },
         "workflows_XMLProcessingViaHTTP_name": {
             "defaultValue": "XMLProcessingViaHTTP",
+            "type": "String"
+        },
+        "connectionGateways_GatewayOnPremise_name": {
+            "defaultValue": "GatewayOnPremise",
             "type": "String"
         },
         "workflows_XMLProcessingViaHTTP_id": {
@@ -249,17 +249,15 @@
             ]
         },
         {
-            "comments": "Generalized from resource: '/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/resourceGroups/SIT/providers/Microsoft.Web/connections/filesystem'.",
-            "type": "Microsoft.Web/connections",
-            "name": "[parameters('connections_filesystem_name')]",
+            "comments": "Generalized from resource: '/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/resourceGroups/SIT/providers/Microsoft.Web/connectionGateways/GatewayOnPremise'.",
+            "type": "Microsoft.Web/connectionGateways",
+            "name": "[parameters('connectionGateways_GatewayOnPremise_name')]",
             "apiVersion": "2016-06-01",
-            "location": "northcentralus",
+            "location": "northeurope",
             "scale": null,
             "properties": {
-                "displayName": "FileConnectino",
-                "customParameterValues": {},
-                "api": {
-                    "id": "[concat('/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/providers/Microsoft.Web/locations/northcentralus/managedApis/', parameters('connections_filesystem_name'))]"
+                "connectionGatewayInstallation": {
+                    "id": "/subscriptions/0471696b-b330-4a64-b3c2-0db7f41644b0/providers/Microsoft.Web/locations/northeurope/connectionGatewayInstallations/3c62408a-973e-4335-812f-5a7c187cf138"
                 }
             },
             "dependsOn": []
